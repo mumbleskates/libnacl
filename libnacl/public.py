@@ -25,17 +25,22 @@ class SecretKey(libnacl.base.BaseKey):
     '''
     This class is used to manage keypairs
     '''
-    def __init__(self, sk=None):
+    def __init__(self, sk=None, seed=None):
         '''
         If a secret key is not passed in then it will be generated
         '''
-        if sk is None:
+        if None not in (sk, seed):
+            raise ValueError('SecretKey can be constructed from a seed or an existing secret key, but not both.')
+        if sk is not None:  # derive pk from sk
+            if len(sk) != libnacl.crypto_box_SECRETKEYBYTES:
+                raise ValueError('Passed in invalid secret key')
+            else:
+                self.sk = sk
+                self.pk = libnacl.crypto_scalarmult_base(sk)
+        elif seed is not None:  #
+            self.pk, self.sk = libnacl.crypto_box_seed_keypair(seed)
+        else:  # default to random generation
             self.pk, self.sk = libnacl.crypto_box_keypair()
-        elif len(sk) == libnacl.crypto_box_SECRETKEYBYTES:
-            self.sk = sk
-            self.pk = libnacl.crypto_scalarmult_base(sk)
-        else:
-            raise ValueError('Passed in invalid secret key')
 
 
 class Box(object):
